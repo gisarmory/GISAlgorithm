@@ -1,28 +1,29 @@
-# GIS常用算法
-
 [TOC]
 
-作为一个GISer，在日常`WebGIS`开发中，会常用到的`turf.js`，这是一个地理空间分析的`JavaScript`库，经常搭配各种`GIS JS API`使用，如`leaflet`、`mapboxgl`、`openlayers`等；在后台`Java`开发中，也有个比较强大的GIS库，`geotools`，里面包含构建一个完整的地理信息系统所需要的全部工具类；数据库端常用是`postgis`扩展，需要在`postgres`库中引入使用。
+# GIS常用算法
 
-然而在开发某一些业务系统的时候，有些需求只需要调用某一个GIS算法，简单的几行代码即可完成，没有必要去引用一个GIS类库。
+作为一个 GISer，在日常 WebGIS 开发中，会常用到的 [turf.js]()，这是一个地理空间分析的 JavaScript  库，经常搭配各种 WebGIS JsAPI 使用，如 [Leaflet]()、[MapboxGL]()、[OpenLayers]() 等；在后台 Java 开发中，也有个比较强大的GIS库，[GeoTools]()，里面包含构建一个完整的地理信息系统所需要的全部工具类；数据库端常用是 [postgis]() 扩展，需要在 [Postgres]() 数据库中引入使用。
 
-而且有些算法在这些常用的GIS类库中没有对应接口，就比如在下文记录的这几种常用算法中，求垂足、判断线和面的关系，在`turf.js`就没有对应接口。
+然而在开发某一些业务系统的时候，有些需求只需要调用某一个 GIS 算法，简单的几行代码即可完成，没有必要去引用一个 GIS 类库。
 
-下面文章中是我总结的一些常用GIS算法，这里统一用`JavaScript`语言实现，因为`JS`代码相对比较简洁，方便理解其中算法逻辑，也方便在浏览器下预览效果。在具体应用时可以根据具体需求，翻译成`Java`、`C#`、`Python`等语言来使用。
+而且有些算法在这些常用的GIS类库中没有对应接口，就比如在下文记录的这几种常用算法中，求垂足、判断线和面的关系，在 [turf.js]() 就没有对应接口。
+
+下面文章中是我总结的一些常用 GIS 算法，这里统一用JavaScript 语言实现，因为 JS 代码相对比较简洁，方便理解其中算法逻辑，也方便在浏览器下预览效果。
+
+在具体应用时可以根据具体需求，翻译成 Rust、C/C++、Java、C#.NET、Python 等语言来使用。
 
 文中代码大部分为之前遇到需求时在网上搜索得到，然后自己根据具体需要做了优化修改，通过这篇文章做个总结收集，也方便后续使用时查找。
 
 
+## 1 算法介绍
 
-## 1、常用算法
+以下方法中传参的点、线、面都是对应 GeoJSON 格式中 `coordinates`，方便统一调用。
 
-以下方法中传参的点、线、面都是对应`geojson`格式中`coordinates`，方便统一调用。`geojson`标准参考：https://www.oschina.net/translate/geojson-spec
+GeoJSON 标准参考：https://www.oschina.net/translate/geojson-spec
 
-![image-20210908154231301](https://blogimage.gisarmory.xyz/image-20210908154231301.png)
+### 1.1 经纬度点之间的距离
 
-### 1.1、计算两经纬度点之间的距离
-
-适用场景：测量
+> 适用场景：测量
 
 ```js
 /**
@@ -45,8 +46,7 @@ function getDistance(p1, p2) {
 ```
 
 
-
-### 1.2、根据已知线段以及到起点距离，求目标点坐标
+### 1.2 根据已知线段以及到起点距离，求目标点坐标
 
 适用场景：封闭管段定位问题点
 
@@ -70,11 +70,11 @@ function getLinePoint(line, dis) {
 
 
 
-### 1.3、已知点、线段，求垂足
+### 1.3 已知点、线段，求垂足
 
 垂足可能在线段上，也可能在线段延长线上。
 
-适用场景：求垂足
+> 适用场景：求垂足
 
 ```js
 /**
@@ -98,13 +98,13 @@ function getFootPoint(line, p) {
 
 
 
-### 1.4、线段上距离目标点最近的点
+### 1.4 线段上距离目标点最近的点
 
 不同于上面求垂足方法，该方法求出的点肯定在线段上。
 
 如果垂足在线段上，则最近的点就是垂足，如果垂足在线段延长线上，则最近的点就是线段某一个端点。
 
-适用场景：根据求出最近的点计算点到线段的最短距离
+> 适用场景：根据求出最近的点计算点到线段的最短距离
 
 ```js
 /**
@@ -135,11 +135,13 @@ function getShortestPointInLine(line, p) {
 
 
 
-### 1.5、点缓冲
+### 1.5 点缓冲
 
-这里缓冲属于测地线方法，由于这里并没有严格的投影转换体系，所以与标准的测地线缓冲还有些许误差，不过经测试，半径`100KM`内，误差基本可以忽略。具体缓冲类型可看下之前的文章[你真的会用PostGIS中的buffer缓冲吗？](https://blog.csdn.net/gisarmory/article/details/109646712)
+这里缓冲属于测地线方法，由于这里并没有严格的投影转换体系，所以与标准的测地线缓冲还有些许误差，不过经测试，半径 100km 内，误差基本可以忽略。
 
-适用场景：根据点和半径画圆
+具体缓冲类型可看下之前的文章 [你真的会用PostGIS中的buffer缓冲吗？](https://blog.csdn.net/gisarmory/article/details/109646712)
+
+> 适用场景：根据点和半径画圆
 
 ```js
 /**
@@ -169,13 +171,15 @@ function bufferPoint(center, radius, vertices) {
 
 
 
-### 1.6、点和面关系
+### 1.6 点和面关系
 
-该方法采用射线法思路实现。（了解射线法可参考：https://blog.csdn.net/qq_27161673/article/details/52973866）
+该方法采用射线法思路实现。
+
+了解射线法可参考：https://blog.csdn.net/qq_27161673/article/details/52973866
 
 这里已经考虑到环状多边形的情况。
 
-适用场景：判断点是否在面内
+> 适用场景：判断点是否在面内
 
 ```js
 /**
@@ -257,12 +261,9 @@ function isLeft(point, line) {
 ```
 
 
+### 1.7 线段与线段的关系
 
-
-
-### 1.7、线段与线段的关系
-
-适用场景：判断线和线的关系
+> 适用场景：判断线和线的关系
 
 ```js
 /**
@@ -315,9 +316,9 @@ function intersectLineAndLine(line1, line2) {
 
 
 
-### 1.8、线和面关系
+### 1.8 线和面关系
 
-适用场景：判断线与面的关系
+> 适用场景：判断线与面的关系
 
 该方法考虑到环状多边形的情况，且把相切情况分为了内切和外切。
 
@@ -405,9 +406,9 @@ function intersectLineAndRing(line, ring) {
 
 
 
-### 1.9、geojson 面转线
+### 1.9 GeoJSON 面转线
 
-适用场景：只有`geojson`面数据，获取线的边界
+> 适用场景：只有 GeoJSON 面数据，获取线的边界
 
 ```js
 /**
@@ -448,30 +449,20 @@ function convertPolygonToPolyline(polygonGeoJson) {
 ```
 
 
+## 2 在线示例
+
+在线示例：[GISAlgorithm Demo](http://gisarmory.xyz/blog/index.html?demo=GISAlgorithm)
+
+代码地址：[GISAlgorithm Code](http://gisarmory.xyz/blog/index.html?source=GISAlgorithm)
 
 
+---
 
-## 2、在线示例
-
-在线示例：[http://gisarmory.xyz/blog/index.html?demo=GISAlgorithm](http://gisarmory.xyz/blog/index.html?demo=GISAlgorithm)
-
-代码地址：[http://gisarmory.xyz/blog/index.html?source=GISAlgorithm](http://gisarmory.xyz/blog/index.html?source=GISAlgorithm)
-
-
-
-
-
-* * *
-
-原文地址：[http://gisarmory.xyz/blog/index.html?blog=GISAlgorithm](http://gisarmory.xyz/blog/index.html?blog=GISAlgorithm)
+原文地址：http://gisarmory.xyz/blog/index.html?blog=GISAlgorithm
 
 关注《[GIS兵器库](http://gisarmory.xyz/blog/index.html?blog=wechat)》， 只给你网上搜不到的GIS知识技能。
 
 ![](http://blogimage.gisarmory.xyz/20200923063756.png)
 
 本文章采用 [知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议 ](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)进行许可。欢迎转载、使用、重新发布，但务必保留文章署名《GIS兵器库》（包含链接：  [http://gisarmory.xyz/blog/](http://gisarmory.xyz/blog/)），不得用于商业目的，基于本文修改后的作品务必以相同的许可发布。
-
-
-
-
 
