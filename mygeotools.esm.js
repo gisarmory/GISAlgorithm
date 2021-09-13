@@ -1,7 +1,9 @@
 /**
  * @typedef {[number, number]} LonLat
  * @typedef {LonLat[]} LineString
+ * @typedef {LonLat[]} Ring
  * @typedef {LonLat[][]} Polygon
+ * @typedef {[LonLat, LonLat]} LineSegment
  */
 
 /**
@@ -25,7 +27,7 @@ const getDistance = (p1, p2) => {
 
 /**
  * 根据已知线段以及到起点距离（单位：米），求目标点坐标
- * @param {LonLat[]} line 线段；[[经度,纬度],[经度,纬度]]；例：[[116.01,40.01],[116.52,40.01]]
+ * @param {LineSegment} line 线段；[[经度,纬度],[经度,纬度]]；例：[[116.01,40.01],[116.52,40.01]]
  * @param {number} dis 到起点距离（米）；Number；例：500
  *
  * @return {LonLat} point 返回坐标
@@ -41,7 +43,7 @@ const getLinePoint = (line, dis) => {
 
 /**
  * 已知点、线段，求垂足
- * @param {LineString} line 线段；[[经度,纬度],[经度,纬度]]；例：[[116.01,40.01],[116.52,40.01]]
+ * @param {LineSegment} line 线段；[[经度,纬度],[经度,纬度]]；例：[[116.01,40.01],[116.52,40.01]]
  * @param {LonLat} p 点；[经度,纬度]；例：[116.35,40.08]
  *
  * @return {LonLat} point 返回垂足坐标
@@ -60,7 +62,7 @@ const getFootPoint = (line, p) => {
 
 /**
  * 线段上距离目标点最近的点
- * @param {LineString} line 线段；[[经度,纬度],[经度,纬度]]；例：[[116.01,40.01],[116.52,40.01]]
+ * @param {LineSegment} line 线段；[[经度,纬度],[经度,纬度]]；例：[[116.01,40.01],[116.52,40.01]]
  * @param {LonLat} p 点；[经度,纬度]；例：[116.35,40.08]
  *
  * @return {LonLat} point 最近的点坐标
@@ -83,8 +85,6 @@ const getShortestPointInLine = (line, p) => {
   return [(p1[0] + u * dx), (p1[1] + u * dy)]
 }
 
-
-
 /**
  * 点缓冲
  * @param {LonLat} center 中心点；[经度,纬度]；例：[116.35,40.08]
@@ -95,7 +95,7 @@ const getShortestPointInLine = (line, p) => {
  */
 const bufferPoint = (center, radius, vertices = 64) => {
   /**
-   * @type {LonLat[]}
+   * @type {Ring}
    */
   const coords = []
   // 111319.55：在赤道上1经度差对应的距离，111133.33：在经线上1纬度差对应的距离
@@ -120,7 +120,7 @@ const bufferPoint = (center, radius, vertices = 64) => {
  * @return {number} inside 点和面关系；0:多边形外，1：多边形内，2：多边形边上
  */
 const pointInPolygon = (point, polygon) => {
-  const isInNum = 0
+  let isInNum = 0
   for (let i = 0; i < polygon.length; i++) {
     const inside = pointInRing(point, polygon[i])
     if (inside === 2) {
@@ -139,7 +139,7 @@ const pointInPolygon = (point, polygon) => {
 /**
  * 点和面关系
  * @param {LonLat} point 点
- * @param {Polygon} ring 单个闭合面的坐标
+ * @param {Ring} ring 单个闭合面的坐标
  * @todo
  * 
  * @return {number} inside 点和面关系，0:多边形外，1：多边形内，2：多边形边上
@@ -177,7 +177,7 @@ const pointInRing = (point, ring) => {
 /**
  * 判断点与线段的相对位置
  * @param {LonLat} point 目标点
- * @param {LineString} line 线段
+ * @param {LineSegment} line 线段
  * 
  * @return {number} isLeft，点与线段的相对位置，0为在线段上，>0 p在左侧，<0 p在右侧
  */
@@ -189,8 +189,8 @@ const isLeft = (point, line) => {
 
 /**
  * 线段与线段的关系
- * @param {LineString} line1 线段；[[经度,纬度],[经度,纬度]]；例：[[116.01,40.01],[116.52,40.01]]
- * @param {LineString} line2 线段；[[经度,纬度],[经度,纬度]]；例：[[116.33,40.21],[116.36,39.76]]
+ * @param {LineSegment} line1 线段；[[经度,纬度],[经度,纬度]]；例：[[116.01,40.01],[116.52,40.01]]
+ * @param {LineSegment} line2 线段；[[经度,纬度],[经度,纬度]]；例：[[116.33,40.21],[116.36,39.76]]
  *
  * @return {number} intersect 线段与线段的关系；0:相离，1：相交，2：相切
  */
@@ -234,7 +234,7 @@ const intersectLineAndLine = (line1, line2) => {
 
 /**
  * 线和面关系
- * @param {LineString} line 线段；[[经度,纬度],[经度,纬度]]；例：[[116.01,40.01],[116.52,40.01]]
+ * @param {LineSegment} line 线段；[[经度,纬度],[经度,纬度]]；例：[[116.01,40.01],[116.52,40.01]]
  * @param {Polygon} polygon 面；geojson格式中的coordinates；例：[[[116.1,39.5],[116.1,40.5],[116.9,40.5],[116.9,39.5]],[[116.3,39.7],[116.3,40.3],[116.7,40.3],[116.7,39.7]]]
  *
  * @return {number} intersect 线和面关系；0:相离，1：相交，2：包含，3：内切，4：外切
@@ -274,8 +274,8 @@ const intersectLineAndPolygon = (line, polygon) => {
 
 /**
  * 线和面关系
- * @param {LineString} line 线段
- * @param {Polygon} ring 单面
+ * @param {LineSegment} line 线段
+ * @param {Ring} ring 单面
  * 
  * @return {number} intersect 线和面关系，0:相离，1：相交，2：包含，3：内切，4：外切
  */
@@ -284,7 +284,7 @@ const intersectLineAndRing = (line, ring) => {
   let isTangent = false
   const inserset1 = pointInRing(line[0], ring) // 点和面关系，0:多边形外，1：多边形内，2：多边形边上
   const inserset2 = pointInRing(line[1], ring) // 点和面关系，0:多边形外，1：多边形内，2：多边形边上
-  if (inserset1 === inserset2 === 0) {
+  if (inserset1 === 0 && inserset2 === 0) {
     inserset = 0
   } else if ((inserset1 * inserset2) === 1) {
     inserset = 2
@@ -358,5 +358,7 @@ export {
   
   LonLat,
   LineString,
-  Polygon
+  Polygon,
+  LineSegment,
+  Ring
 }
